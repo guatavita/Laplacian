@@ -17,6 +17,15 @@ bastien.rigaud@univ-rennes1.fr
 
 ```python
 def main():
+    handle_mask = sitk.ReadImage(r"C:\Data\Data_test\Rectum_ext_0.nii.gz")
+    image_mask = sitk.GetArrayFromImage(handle_mask)
+
+    handle_centerline = sitk.ReadImage(r"C:\Data\Data_test\Rectum_ext_0_centerline.nii.gz")
+    image_centerline = sitk.GetArrayFromImage(handle_centerline)
+
+    laplacian_filter = Laplacian(input=image_mask, internal=image_centerline, spacing=handle_mask.GetSpacing(),
+                                 cl_max=10, cl_min=2, compute_thickness=True, compute_internal_corresp=True,
+                                 compute_external_corresp=True)
 ```
 
 ## Dependencies
