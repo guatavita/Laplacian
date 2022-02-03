@@ -8,13 +8,8 @@
 # Modified by Bastien Rigaud
 # Description:
 
-import os
-import math
 import time
-
 import numpy as np
-import SimpleITK as sitk
-
 from PlotScrollNumpyArrays.Plot_Scroll_Images import plot_scroll_Image
 
 
@@ -44,20 +39,21 @@ def numpy_centroid(array, value=1):
 class Laplacian(object):
     def __init__(self, input, internal=None, spacing=(1.0, 1.0, 1.0), cl_max=500, cl_min=10, compute_thickness=False,
                  compute_internal_corresp=False, compute_external_corresp=False, verbose=False, padding=2):
-        '''
+        """
         Compute laplacian, gradient, thickness and correspondences between internal and external boundary conditions
         on the input. This code use float64 array because the method relies on iterative computation and float32 is
         slower than float64 when used in for loops
-        :param input:
-        :param spacing:
-        :param cl_max:
-        :param cl_min:
-        :param compute_thickness:
-        :param compute_internal_corresp:
-        :param compute_external_corresp:
+        :param input: numpy array of a binary mask
+        :param internal: numpy array of a binary mask inside input (not touching border), OPTIONAL (otherwise centroid)
+        :param spacing: tuple of spacing of the original input
+        :param cl_max: value outside input
+        :param cl_min: value inside internal
+        :param compute_thickness: return thickness following laplacian gradient
+        :param compute_internal_corresp: return correspondence towards internal values following laplacian gradient
+        :param compute_external_corresp: return correspondence towards external values following laplacian gradient
         :param verbose: show iteration and tau values
         :param padding: padding of the bounding box, default = 2
-        '''
+        """
 
         if cl_min == 0 or cl_min == cl_max / 2:
             raise ValueError("Minimal limit condition cannot be 0 or half the maximal limit condition")
@@ -95,7 +91,7 @@ class Laplacian(object):
         self.laplacian = self.compute_laplacian(self.model)
         print("computed laplacian in: {:5.2f} seconds".format(time.time() - start_time))
         start_time = time.time()
-        self.compute_grad_pix_lp()
+        self.compute_gradient()
         print("computed gradient in: {:5.2f} seconds".format(time.time() - start_time))
 
         if compute_thickness:
@@ -137,9 +133,8 @@ class Laplacian(object):
         laplacian = np.array(model).astype(float)
         mat_temp = np.array(model).astype(float)
         iteration = 0
-        indices = np.argwhere(self.model == (self.cl_max / 2))
         while True:
-            for l, c, p in indices:
+            for l, c, p in np.argwhere(self.model == (self.cl_max / 2)):
                 laplacian[l, c, p] = (1 / (2 * (
                         self.sy ** 2 * self.sz ** 2 + self.sx ** 2 * self.sz ** 2 + self.sx ** 2 * self.sy ** 2))) * (
                                          ((self.sy ** 2 * self.sz ** 2) * (
@@ -160,7 +155,7 @@ class Laplacian(object):
         del tau
         return laplacian
 
-    def compute_grad_pix_lp(self):
+    def compute_gradient(self):
         self.grad = np.zeros(self.laplacian.shape + (3,), dtype=float)
         self.grad_n = np.zeros(self.laplacian.shape + (3,), dtype=int)
         indices = np.argwhere(self.model == (self.cl_max / 2))
@@ -195,9 +190,8 @@ class Laplacian(object):
         tau_l1 = np.zeros_like(self.laplacian)
 
         iteration = 0
-        indices = np.argwhere(self.model == (self.cl_max / 2))
         while True:
-            for l, c, p in indices:
+            for l, c, p in np.argwhere(self.model == (self.cl_max / 2)):
                 weights = (1 / (self.sy * self.sz * abs(self.grad[l, c, p, 0]) + self.sx * self.sz * abs(
                     self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
                 # compute thickness between internal and external regions
@@ -235,24 +229,21 @@ class Laplacian(object):
 
     def compute_normalize_l0(self):
         self.l0_n = np.zeros_like(self.laplacian)
-        indices = np.argwhere(self.model == (self.cl_max / 2))
-        for l, c, p in indices:
+        for l, c, p in np.argwhere(self.model == (self.cl_max / 2)):
             self.l0_n[l, c, p] = (self.l0[l, c, p] / (self.l0[l, c, p] + self.l1[l, c, p]))
 
     def compute_correspondence_internal(self):
         self.phi0 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
-        indices = np.argwhere(self.model == self.cl_min)
-        for l, c, p in indices:
+        for l, c, p in np.argwhere(self.model == self.cl_min):
             self.phi0[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
 
         tau_phi0 = np.zeros_like(self.phi0)
         phi0_mem = np.zeros_like(self.phi0)
 
-        indices = np.argwhere(self.model == (self.cl_max / 2))
         iteration = 0
         while True:
-            for l, c, p in indices:
+            for l, c, p in np.argwhere(self.model == (self.cl_max / 2)):
                 # point correspondences between internal and external regions on x, y and z
                 weights = (1 / (self.sy * self.sz * abs(self.grad[l, c, p, 0]) + self.sx * self.sz * abs(
                     self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
@@ -286,17 +277,15 @@ class Laplacian(object):
     def compute_correspondence_external(self):
         self.phi1 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
-        indices = np.argwhere(self.input != 1)
-        for l, c, p in indices:
+        for l, c, p in np.argwhere(self.input != 1):
             self.phi1[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
 
         tau_phi1 = np.zeros_like(self.phi1)
         phi1_mem = np.zeros_like(self.phi1)
 
-        indices = np.argwhere(self.model == (self.cl_max / 2))
         iteration = 0
         while True:
-            for l, c, p in indices:
+            for l, c, p in np.argwhere(self.model == (self.cl_max / 2)):
                 weights = (1 / (self.sy * self.sz * abs(self.grad[l, c, p, 0]) + self.sx * self.sz * abs(
                     self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
                 # point correspondences between external and internal regions on x, y and z

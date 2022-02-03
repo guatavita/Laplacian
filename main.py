@@ -6,8 +6,8 @@
 # bastien.rigaud@univ-rennes1.fr
 # Description:
 
+import SimpleITK as sitk
 from Laplacian import *
-from PlotScrollNumpyArrays.Plot_Scroll_Images import plot_scroll_Image
 
 def main():
     handle_mask = sitk.ReadImage(r"C:\Data\Data_test\Rectum_ext_0.nii.gz")
