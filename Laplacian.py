@@ -58,10 +58,6 @@ class Laplacian(object):
         :param verbose: show iteration and tau values
         :param padding: padding of the bounding box, default = 2
         '''
-        # TODO recover image size
-        # convert code to use 4D Numpy?
-        # export field images to [x, y, z, c]
-        # function to export/save image as sitk with origin and stuff
 
         if cl_min == 0 or cl_min == cl_max / 2:
             raise ValueError("Minimal limit condition cannot be 0 or half the maximal limit condition")
