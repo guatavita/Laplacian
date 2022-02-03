@@ -103,6 +103,8 @@ class Laplacian(object):
             self.compute_correspondence_external()
             print("computed external correspondence in: {:5.2f} seconds".format(time.time() - start_time))
 
+        self.laplacian = self.laplacian*self.input
+
     def build_model(self, internal=None):
         self.model = self.cl_max * np.ones_like(self.input)
         self.model[self.input > 0] = self.cl_max / 2
@@ -127,16 +129,15 @@ class Laplacian(object):
                                                   (self.sx ** 2 * self.sy ** 2) * (
                                                       laplacian[l, c, p + 1] + laplacian[l, c, p - 1]))))
             iteration += 1
-            if iteration > 10:
-                tau = abs((mat_temp - laplacian) / laplacian)
-                mat_temp = np.array(laplacian)
-                tau_max = np.amax(tau)
-                print("it: {}, tau_max = {}".format(iteration, tau_max))
-                if tau_max <= self.val_conv_laplacian or iteration == self.iteration_max:
-                    break
+            tau = abs((mat_temp - laplacian) / laplacian)
+            mat_temp = np.array(laplacian)
+            tau_max = np.amax(tau)
+            print("it: {}, tau_max = {}".format(iteration, tau_max))
+            if tau_max <= self.val_conv_laplacian or iteration == self.iteration_max:
+                break
         del mat_temp
         del tau
-        return laplacian * self.input
+        return laplacian
 
     def compute_grad_pix_lp(self):
         self.gradx = np.zeros_like(self.laplacian)
@@ -202,13 +203,12 @@ class Laplacian(object):
                             self.l1[l, c, p + self.gradz_n[l, c, p]])
                 tau_l1[l, c, p] = abs((l1_mem[l, c, p] - self.l1[l, c, p]) / self.l1[l, c, p])
             iteration += 1
-            if iteration > 10:
-                l0_mem = np.array(self.l0)
-                l1_mem = np.array(self.l1)
-                tau_max = max(np.amax(tau_l0), np.amax(tau_l1))
-                print("it: {}, tau_max = {}".format(iteration, tau_max))
-                if tau_max <= self.conv_rate_thickness:
-                    break
+            l0_mem = np.array(self.l0)
+            l1_mem = np.array(self.l1)
+            tau_max = max(np.amax(tau_l0), np.amax(tau_l1))
+            print("it: {}, tau_max = {}".format(iteration, tau_max))
+            if tau_max <= self.conv_rate_thickness:
+                break
 
         self.l0 = self.l0 - l0_offset
         self.l1 = self.l1 - l1_offset
@@ -262,21 +262,18 @@ class Laplacian(object):
                                                      l, c - self.grady_n[l, c, p], p] + self.sx * self.sy * abs(
                     self.gradz[l, c, p]) * self.phi0z[l, c, p - self.gradz_n[l, c, p]])
 
-                if iteration > 10:
-                    tau_phi0x[l, c, p] = abs((phi0x_mem[l, c, p] - self.phi0x[l, c, p]) / self.phi0x[l, c, p])
-                    tau_phi0y[l, c, p] = abs((phi0y_mem[l, c, p] - self.phi0y[l, c, p]) / self.phi0y[l, c, p])
-                    tau_phi0z[l, c, p] = abs((phi0z_mem[l, c, p] - self.phi0z[l, c, p]) / self.phi0z[l, c, p])
+                tau_phi0x[l, c, p] = abs((phi0x_mem[l, c, p] - self.phi0x[l, c, p]) / self.phi0x[l, c, p])
+                tau_phi0y[l, c, p] = abs((phi0y_mem[l, c, p] - self.phi0y[l, c, p]) / self.phi0y[l, c, p])
+                tau_phi0z[l, c, p] = abs((phi0z_mem[l, c, p] - self.phi0z[l, c, p]) / self.phi0z[l, c, p])
 
             iteration += 1
-            if iteration > 10:
-                phi0x_mem = np.array(self.phi0x)
-                phi0y_mem = np.array(self.phi0y)
-                phi0z_mem = np.array(self.phi0z)
-
-                tau_max = max(np.nanmax(tau_phi0x), np.nanmax(tau_phi0y), np.nanmax(tau_phi0z))
-                print("it: {}, tau_max = {}".format(iteration, tau_max))
-                if tau_max <= self.conv_rate_corr:
-                    break
+            phi0x_mem = np.array(self.phi0x)
+            phi0y_mem = np.array(self.phi0y)
+            phi0z_mem = np.array(self.phi0z)
+            tau_max = max(np.nanmax(tau_phi0x), np.nanmax(tau_phi0y), np.nanmax(tau_phi0z))
+            print("it: {}, tau_max = {}".format(iteration, tau_max))
+            if tau_max <= self.conv_rate_corr:
+                break
 
         del tau_phi0x
         del phi0x_mem
@@ -329,20 +326,18 @@ class Laplacian(object):
                                                      l, c + self.grady_n[l, c, p], p] + self.sx * self.sy * abs(
                     self.gradz[l, c, p]) * self.phi1z[l, c, p + self.gradz_n[l, c, p]])
 
-                if iteration > 10:
-                    tau_phi1x[l, c, p] = abs((phi1x_mem[l, c, p] - self.phi1x[l, c, p]) / self.phi1x[l, c, p])
-                    tau_phi1y[l, c, p] = abs((phi1y_mem[l, c, p] - self.phi1y[l, c, p]) / self.phi1y[l, c, p])
-                    tau_phi1z[l, c, p] = abs((phi1z_mem[l, c, p] - self.phi1z[l, c, p]) / self.phi1z[l, c, p])
+                tau_phi1x[l, c, p] = abs((phi1x_mem[l, c, p] - self.phi1x[l, c, p]) / self.phi1x[l, c, p])
+                tau_phi1y[l, c, p] = abs((phi1y_mem[l, c, p] - self.phi1y[l, c, p]) / self.phi1y[l, c, p])
+                tau_phi1z[l, c, p] = abs((phi1z_mem[l, c, p] - self.phi1z[l, c, p]) / self.phi1z[l, c, p])
 
             iteration += 1
-            if iteration > 10:
-                phi1x_mem = np.array(self.phi1x)
-                phi1y_mem = np.array(self.phi1y)
-                phi1z_mem = np.array(self.phi1z)
-                tau_max = max(np.nanmax(tau_phi1x), np.nanmax(tau_phi1y), np.nanmax(tau_phi1z))
-                print("it: {}, tau_max = {}".format(iteration, tau_max))
-                if tau_max <= self.conv_rate_corr:
-                    break
+            phi1x_mem = np.array(self.phi1x)
+            phi1y_mem = np.array(self.phi1y)
+            phi1z_mem = np.array(self.phi1z)
+            tau_max = max(np.nanmax(tau_phi1x), np.nanmax(tau_phi1y), np.nanmax(tau_phi1z))
+            print("it: {}, tau_max = {}".format(iteration, tau_max))
+            if tau_max <= self.conv_rate_corr:
+                break
 
         del tau_phi1x
         del phi1x_mem

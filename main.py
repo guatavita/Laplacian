@@ -12,9 +12,11 @@ from PlotScrollNumpyArrays.Plot_Scroll_Images import plot_scroll_Image
 def main():
     img_pointer = sitk.ReadImage(r"C:\Data\Data_test\Prostate_0.nii.gz")
     img_array = sitk.GetArrayFromImage(img_pointer)
-    laplacian_filter = Laplacian(input=img_array, spacing= img_pointer.GetSpacing(), cl_max=500, cl_min=10,
-                                 compute_thickness=True, compute_internal_corresp=True,
+    laplacian_filter = Laplacian(input=img_array, spacing= img_pointer.GetSpacing(), cl_max=2, cl_min=1,
+                                 compute_thickness=False, compute_internal_corresp=False,
                                  compute_external_corresp=True)
+
+    xxx = 1
 
 if __name__ == '__main__':
     main()
