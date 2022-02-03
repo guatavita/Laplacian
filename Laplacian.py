@@ -60,7 +60,6 @@ class Laplacian(object):
 
         self.input = input
         self.sx, self.sy, self.sz = spacing
-        self.tx = self.ty = self.tz = input.shape
         self.cl_max = cl_max
         self.cl_min = cl_min
         self.val_conv_laplacian = 0.005
@@ -86,7 +85,6 @@ class Laplacian(object):
             self.cent_x, self.cent_y, self.cent_z = numpy_centroid(self.input).astype(int)
 
         self.build_model(internal)
-        self.max_tx, self.max_ty, self.max_tz = self.model.shape
         start_time = time.time()
         self.laplacian = self.compute_laplacian(self.model)
         print("computed laplacian in: {:5.2f} seconds".format(time.time() - start_time))
