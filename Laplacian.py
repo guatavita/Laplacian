@@ -235,7 +235,7 @@ class Laplacian(object):
     def compute_correspondence_internal(self):
         self.phi0 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
-        for l, c, p in np.argwhere(self.model == self.cl_min):
+        for l, c, p in np.argwhere(self.model != self.cl_max/2):
             self.phi0[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
 
         tau_phi0 = np.zeros_like(self.phi0)
@@ -277,7 +277,7 @@ class Laplacian(object):
     def compute_correspondence_external(self):
         self.phi1 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
-        for l, c, p in np.argwhere(self.input != 1):
+        for l, c, p in np.argwhere(self.model != self.cl_max/2):
             self.phi1[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
 
         tau_phi1 = np.zeros_like(self.phi1)
