@@ -10,13 +10,15 @@ from Laplacian import *
 from PlotScrollNumpyArrays.Plot_Scroll_Images import plot_scroll_Image
 
 def main():
-    img_pointer = sitk.ReadImage(r"C:\Data\Data_test\Prostate_0.nii.gz")
-    img_array = sitk.GetArrayFromImage(img_pointer)
-    laplacian_filter = Laplacian(input=img_array, spacing= img_pointer.GetSpacing(), cl_max=2, cl_min=1,
-                                 compute_thickness=False, compute_internal_corresp=False,
-                                 compute_external_corresp=True)
+    handle_mask = sitk.ReadImage(r"C:\Data\Data_test\Rectum_ext_0.nii.gz")
+    image_mask = sitk.GetArrayFromImage(handle_mask)
 
-    xxx = 1
+    handle_centerline = sitk.ReadImage(r"C:\Data\Data_test\Rectum_ext_0_centerline.nii.gz")
+    image_centerline = sitk.GetArrayFromImage(handle_centerline)
+
+    laplacian_filter = Laplacian(input=image_mask, internal=image_centerline, spacing=handle_mask.GetSpacing(),
+                                 cl_max=10, cl_min=2, compute_thickness=True, compute_internal_corresp=True,
+                                 compute_external_corresp=True)
 
 if __name__ == '__main__':
     main()
