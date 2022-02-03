@@ -108,12 +108,14 @@ class Laplacian(object):
             self.compute_correspondence_internal()
             print("computed internal correspondence in: {:5.2f} seconds".format(time.time() - start_time))
             self.phi0 = np.pad(self.phi0, padding_param + [[0, 0]])
+            self.phi0 = self.convert_phi_to_field(self.phi0, [bb_parameters[0], bb_parameters[2], bb_parameters[4]])
 
         if compute_external_corresp:
             start_time = time.time()
             self.compute_correspondence_external()
             print("computed external correspondence in: {:5.2f} seconds".format(time.time() - start_time))
             self.phi1 = np.pad(self.phi1, padding_param + [[0, 0]])
+            self.phi1 = self.convert_phi_to_field(self.phi1, [bb_parameters[0], bb_parameters[2], bb_parameters[4]])
 
         self.laplacian = np.pad(self.laplacian * self.input, padding_param)
 
@@ -314,3 +316,9 @@ class Laplacian(object):
         del phi1_mem
 
         self.phi1 = self.phi1 * np.repeat(self.input[..., None], 3, axis=-1)
+
+    def convert_phi_to_field(self, phi, padding):
+        temp_phi = np.copy(phi)
+        for l, c, p in np.argwhere(phi>0)[..., 0:3]:
+            temp_phi[l, c, p, :] = [self.sx, self.sy, self.sz]*((phi[l, c, p, :]/[self.sx, self.sy, self.sz])+padding-np.array([l, c, p]))
+        return temp_phi
