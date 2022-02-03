@@ -63,7 +63,7 @@ class Laplacian(object):
         # export field images to [x, y, z, c]
         # function to export/save image as sitk with origin and stuff
 
-        if cl_min == 0 or cl_min == cl_max/2:
+        if cl_min == 0 or cl_min == cl_max / 2:
             raise ValueError("Minimal limit condition cannot be 0 or half the maximal limit condition")
 
         self.input = input
@@ -79,17 +79,17 @@ class Laplacian(object):
 
         original_shape = self.input.shape
         bb_parameters = compute_bounding_box(self.input, padding=padding)
-        padding_param =[[bb_parameters[0],original_shape[0]-bb_parameters[1]],
-                        [bb_parameters[2],original_shape[1]-bb_parameters[3]],
-                        [bb_parameters[4],original_shape[2]-bb_parameters[5]]]
+        padding_param = [[bb_parameters[0], original_shape[0] - bb_parameters[1]],
+                         [bb_parameters[2], original_shape[1] - bb_parameters[3]],
+                         [bb_parameters[4], original_shape[2] - bb_parameters[5]]]
         self.input = self.input[bb_parameters[0]:bb_parameters[1],
                      bb_parameters[2]:bb_parameters[3],
                      bb_parameters[4]:bb_parameters[5]]
 
         if internal is not None:
             internal = internal[bb_parameters[0]:bb_parameters[1],
-                     bb_parameters[2]:bb_parameters[3],
-                     bb_parameters[4]:bb_parameters[5]]
+                       bb_parameters[2]:bb_parameters[3],
+                       bb_parameters[4]:bb_parameters[5]]
         else:
             self.cent_x, self.cent_y, self.cent_z = numpy_centroid(self.input).astype(int)
 
@@ -117,15 +117,15 @@ class Laplacian(object):
             start_time = time.time()
             self.compute_correspondence_internal()
             print("computed internal correspondence in: {:5.2f} seconds".format(time.time() - start_time))
-            self.phi0 = np.pad(self.phi0, padding_param+[[0,0]])
+            self.phi0 = np.pad(self.phi0, padding_param + [[0, 0]])
 
         if compute_external_corresp:
             start_time = time.time()
             self.compute_correspondence_external()
             print("computed external correspondence in: {:5.2f} seconds".format(time.time() - start_time))
-            self.phi1 = np.pad(self.phi1, padding_param+[[0,0]])
+            self.phi1 = np.pad(self.phi1, padding_param + [[0, 0]])
 
-        self.laplacian = np.pad(self.laplacian*self.input, padding_param)
+        self.laplacian = np.pad(self.laplacian * self.input, padding_param)
 
     def build_model(self, internal=None):
         self.model = self.cl_max * np.ones_like(self.input)
@@ -145,13 +145,13 @@ class Laplacian(object):
         while True:
             for l, c, p in indices:
                 laplacian[l, c, p] = (1 / (2 * (
-                            self.sy ** 2 * self.sz ** 2 + self.sx ** 2 * self.sz ** 2 + self.sx ** 2 * self.sy ** 2))) * (
-                                     ((self.sy ** 2 * self.sz ** 2) * (
+                        self.sy ** 2 * self.sz ** 2 + self.sx ** 2 * self.sz ** 2 + self.sx ** 2 * self.sy ** 2))) * (
+                                         ((self.sy ** 2 * self.sz ** 2) * (
                                                  laplacian[l - 1, c, p] + laplacian[l + 1, c, p]) + (
                                                   (self.sx ** 2 * self.sz ** 2) * (
-                                                      laplacian[l, c + 1, p] + laplacian[l, c - 1, p])) + (
+                                                  laplacian[l, c + 1, p] + laplacian[l, c - 1, p])) + (
                                                   (self.sx ** 2 * self.sy ** 2) * (
-                                                      laplacian[l, c, p + 1] + laplacian[l, c, p - 1]))))
+                                                  laplacian[l, c, p + 1] + laplacian[l, c, p - 1]))))
             iteration += 1
             tau = abs((mat_temp - laplacian) / laplacian)
             mat_temp = np.array(laplacian)
@@ -165,8 +165,8 @@ class Laplacian(object):
         return laplacian
 
     def compute_grad_pix_lp(self):
-        self.grad = np.zeros(self.laplacian.shape+(3,), dtype=float)
-        self.grad_n = np.zeros(self.laplacian.shape+(3,), dtype=int)
+        self.grad = np.zeros(self.laplacian.shape + (3,), dtype=float)
+        self.grad_n = np.zeros(self.laplacian.shape + (3,), dtype=int)
         indices = np.argwhere(self.model == (self.cl_max / 2))
         for l, c, p in indices:
             # compute gradient in the three directions
@@ -206,17 +206,17 @@ class Laplacian(object):
                     self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
                 # compute thickness between internal and external regions
                 self.l0[l, c, p] = weights * (
-                            self.sx * self.sy * self.sz + self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.l0[
-                        l - self.grad_n[l, c, p, 0], c, p] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.l0[
-                                l, c - self.grad_n[l, c, p, 1], p] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) *
-                            self.l0[l, c, p - self.grad_n[l, c, p, 2]])
+                        self.sx * self.sy * self.sz + self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.l0[
+                    l - self.grad_n[l, c, p, 0], c, p] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.l0[
+                            l, c - self.grad_n[l, c, p, 1], p] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) *
+                        self.l0[l, c, p - self.grad_n[l, c, p, 2]])
                 tau_l0[l, c, p] = abs((l0_mem[l, c, p] - self.l0[l, c, p]) / self.l0[l, c, p])
                 # compute thickness between external and internal regions
                 self.l1[l, c, p] = weights * (
-                            self.sx * self.sy * self.sz + self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.l1[
-                        l + self.grad_n[l, c, p, 0], c, p] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.l1[
-                                l, c + self.grad_n[l, c, p, 1], p] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) *
-                            self.l1[l, c, p + self.grad_n[l, c, p, 2]])
+                        self.sx * self.sy * self.sz + self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.l1[
+                    l + self.grad_n[l, c, p, 0], c, p] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.l1[
+                            l, c + self.grad_n[l, c, p, 1], p] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) *
+                        self.l1[l, c, p + self.grad_n[l, c, p, 2]])
                 tau_l1[l, c, p] = abs((l1_mem[l, c, p] - self.l1[l, c, p]) / self.l1[l, c, p])
             iteration += 1
             l0_mem = np.array(self.l0)
@@ -244,12 +244,12 @@ class Laplacian(object):
             self.l0_n[l, c, p] = (self.l0[l, c, p] / (self.l0[l, c, p] + self.l1[l, c, p]))
 
     def compute_correspondence_internal(self):
-        self.phi0 = np.zeros(self.laplacian.shape+(3,), dtype=float)
+        self.phi0 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
         indices = np.argwhere(self.model == self.cl_min)
         for l, c, p in indices:
             self.phi0[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
- 
+
         tau_phi0 = np.zeros_like(self.phi0)
         phi0_mem = np.zeros_like(self.phi0)
 
@@ -258,10 +258,20 @@ class Laplacian(object):
         while True:
             for l, c, p in indices:
                 # point correspondences between internal and external regions on x, y and z
-                weights = (1 / (self.sy * self.sz * abs(self.grad[l, c, p, 0]) + self.sx * self.sz * abs(self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
-                self.phi0[l, c, p, 0] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[l - self.grad_n[l, c, p, 0], c, p, 0] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[l, c - self.grad_n[l, c, p, 1], p, 0] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 0])
-                self.phi0[l, c, p, 1] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[l - self.grad_n[l, c, p, 0], c, p, 1] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[l, c - self.grad_n[l, c, p, 1], p, 1] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 1])
-                self.phi0[l, c, p, 2] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[l - self.grad_n[l, c, p, 0], c, p, 2] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[l, c - self.grad_n[l, c, p, 1], p, 2] + self.sx * self.sy * abs(self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 2])
+                weights = (1 / (self.sy * self.sz * abs(self.grad[l, c, p, 0]) + self.sx * self.sz * abs(
+                    self.grad[l, c, p, 1]) + self.sx * self.sy * abs(self.grad[l, c, p, 2])))
+                self.phi0[l, c, p, 0] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[
+                    l - self.grad_n[l, c, p, 0], c, p, 0] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[
+                                                       l, c - self.grad_n[l, c, p, 1], p, 0] + self.sx * self.sy * abs(
+                    self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 0])
+                self.phi0[l, c, p, 1] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[
+                    l - self.grad_n[l, c, p, 0], c, p, 1] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[
+                                                       l, c - self.grad_n[l, c, p, 1], p, 1] + self.sx * self.sy * abs(
+                    self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 1])
+                self.phi0[l, c, p, 2] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi0[
+                    l - self.grad_n[l, c, p, 0], c, p, 2] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi0[
+                                                       l, c - self.grad_n[l, c, p, 1], p, 2] + self.sx * self.sy * abs(
+                    self.grad[l, c, p, 2]) * self.phi0[l, c, p - self.grad_n[l, c, p, 2], 2])
                 tau_phi0[l, c, p, :] = abs((phi0_mem[l, c, p, :] - self.phi0[l, c, p, :]) / self.phi0[l, c, p, :])
 
             iteration += 1
@@ -278,12 +288,12 @@ class Laplacian(object):
         self.phi0 = self.phi0 * np.repeat(self.input[..., None], 3, axis=-1)
 
     def compute_correspondence_external(self):
-        self.phi1 = np.zeros(self.laplacian.shape+(3,),dtype=float)
+        self.phi1 = np.zeros(self.laplacian.shape + (3,), dtype=float)
 
         indices = np.argwhere(self.input != 1)
         for l, c, p in indices:
             self.phi1[l, c, p, :] = l * self.sx, c * self.sy, p * self.sz
-            
+
         tau_phi1 = np.zeros_like(self.phi1)
         phi1_mem = np.zeros_like(self.phi1)
 
@@ -296,15 +306,15 @@ class Laplacian(object):
                 # point correspondences between external and internal regions on x, y and z
                 self.phi1[l, c, p, 0] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi1[
                     l + self.grad_n[l, c, p, 0], c, p, 0] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi1[
-                                                     l, c + self.grad_n[l, c, p, 1], p, 0] + self.sx * self.sy * abs(
+                                                       l, c + self.grad_n[l, c, p, 1], p, 0] + self.sx * self.sy * abs(
                     self.grad[l, c, p, 2]) * self.phi1[l, c, p + self.grad_n[l, c, p, 2], 0])
                 self.phi1[l, c, p, 1] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi1[
                     l + self.grad_n[l, c, p, 0], c, p, 1] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi1[
-                                                     l, c + self.grad_n[l, c, p, 1], p, 1] + self.sx * self.sy * abs(
+                                                       l, c + self.grad_n[l, c, p, 1], p, 1] + self.sx * self.sy * abs(
                     self.grad[l, c, p, 2]) * self.phi1[l, c, p + self.grad_n[l, c, p, 2], 1])
                 self.phi1[l, c, p, 2] = weights * (self.sy * self.sz * abs(self.grad[l, c, p, 0]) * self.phi1[
                     l + self.grad_n[l, c, p, 0], c, p, 2] + self.sx * self.sz * abs(self.grad[l, c, p, 1]) * self.phi1[
-                                                     l, c + self.grad_n[l, c, p, 1], p, 2] + self.sx * self.sy * abs(
+                                                       l, c + self.grad_n[l, c, p, 1], p, 2] + self.sx * self.sy * abs(
                     self.grad[l, c, p, 2]) * self.phi1[l, c, p + self.grad_n[l, c, p, 2], 2])
 
                 tau_phi1[l, c, p, :] = abs((phi1_mem[l, c, p, :] - self.phi1[l, c, p, :]) / self.phi1[l, c, p, :])
@@ -321,4 +331,3 @@ class Laplacian(object):
         del phi1_mem
 
         self.phi1 = self.phi1 * np.repeat(self.input[..., None], 3, axis=-1)
-
