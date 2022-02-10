@@ -37,7 +37,7 @@ def numpy_centroid(array, value=1):
 
 
 class Laplacian(object):
-    def __init__(self, input, internal=None, spacing=(1.0, 1.0, 1.0), cl_max=500, cl_min=10, compute_thickness=False,
+    def __init__(self, input, internal=None, spacing=(3.0, 1.0, 1.0), cl_max=500, cl_min=10, compute_thickness=False,
                  compute_internal_corresp=False, compute_external_corresp=False, verbose=False, padding=2):
         """
         Compute laplacian, gradient, thickness and correspondences between internal and external boundary conditions
@@ -45,7 +45,7 @@ class Laplacian(object):
         slower than float64 when used in for loops
         :param input: numpy array of a binary mask
         :param internal: numpy array of a binary mask inside input (not touching border), OPTIONAL (otherwise centroid)
-        :param spacing: tuple of spacing of the original input
+        :param spacing: tuple of spacing of the original input FOLLOWING NUMPY ORDER (Z, X, Y)
         :param cl_max: value outside input
         :param cl_min: value inside internal
         :param compute_thickness: return thickness following laplacian gradient
@@ -59,6 +59,7 @@ class Laplacian(object):
             raise ValueError("Minimal limit condition cannot be 0 or half the maximal limit condition")
 
         self.input = input
+        # we don't follow numpy order here
         self.sx, self.sy, self.sz = spacing
         self.cl_max = cl_max
         self.cl_min = cl_min
